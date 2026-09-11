@@ -13,9 +13,9 @@ body-limit: "200mb"
 
 # Upstream request timeouts
 timeouts:
-  messages-ms: 120000         # non-stream /v1/messages timeout
-  stream-messages-ms: 600000  # stream /v1/messages timeout, suitable for Claude Code long tasks
-  count-tokens-ms: 30000      # /v1/messages/count_tokens timeout
+  messages-ms: 120000 # non-stream /v1/messages timeout
+  stream-messages-ms: 600000 # stream /v1/messages timeout, suitable for Claude Code long tasks
+  count-tokens-ms: 30000 # /v1/messages/count_tokens timeout
 
 # Per-request call statistics. Aggregated by:
 #   - client (sha256(api-key))
@@ -47,8 +47,9 @@ cloaking:
   # NOT identity faking; these mirror what the official codex CLI sends.
   # The cli-version drives BOTH the User-Agent suffix and the explicit
   # `version` HTTP header — the backend version-gates some models on it
-  # ("requires a newer version of Codex" 400). Bump if you see that error;
-  # `npm view @openai/codex version` shows the current released version.
+  # ("requires a newer version of Codex" 400). Values below auth2api's
+  # bundled minimum are auto-clamped; `npm view @openai/codex version`
+  # shows the current released version.
   codex:
     # Full User-Agent string, takes precedence over the components below.
     # user-agent: "codex_cli_rs/0.154.0 (macos; arm64)"
