@@ -35,7 +35,7 @@ export function buildRegistry(authDir: string): ProviderRegistry {
 
       // "Cursor exclusive" mode: when only Cursor has accounts, route every
       // unknown / Anthropic-style / OpenAI-style model through Cursor. This
-      // lets clients with hard-coded names (`claude-sonnet-4-5`, `gpt-5.5`,
+      // lets clients with hard-coded names (`claude-sonnet-4-5`, `gpt-5.6`,
       // `opus`) work against auth2api without a `cursor-` prefix.
       const cursorOnly =
         cursor.manager.accountCount > 0 &&

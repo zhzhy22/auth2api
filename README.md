@@ -44,7 +44,7 @@ npm run build
 auth2api supports these upstream providers:
 
 - `anthropic` — Claude OAuth (default). Used for `claude-*` models.
-- `codex` — OpenAI's "Sign in with ChatGPT" OAuth, talking to the official codex backend at `https://chatgpt.com/backend-api/codex/responses`. Used for `gpt-5*` (incl. `gpt-5-codex`), `o\d*`, and `codex-*` models. Requires a **ChatGPT Plus or Pro** subscription — Free accounts authenticate but the first call fails with `model not supported`.
+- `codex` — OpenAI's "Sign in with ChatGPT" OAuth, talking to the official codex backend at `https://chatgpt.com/backend-api/codex/responses`. Used for `gpt-5*` (incl. `gpt-5-codex`), `gpt-6*`, `o\d*`, and `codex-*` models. Requires a **ChatGPT Plus or Pro** subscription — Free accounts authenticate but the first call fails with `model not supported`.
 - `cursor` — experimental Cursor account, authorized either through a browser deep-link PKCE flow (default) or by importing the local Cursor desktop login. **Routing**: in multi-provider setups Cursor only serves models with an explicit `cursor-*` or `cr/*` prefix. In **Cursor-exclusive mode** (only Cursor is logged in, no `anthropic`/`codex` accounts), every request — including bare `claude-*` or `gpt-*` model names — is auto-routed through Cursor so off-the-shelf Claude Code / OpenAI clients work without a prefix.
 
 Pick the provider with `--provider=`. Default is `anthropic`.
@@ -162,6 +162,11 @@ curl http://127.0.0.1:8317/v1/chat/completions \
 | `claude-sonnet-4-6`                                  | anthropic | Claude Sonnet 4.6                                  |
 | `claude-haiku-4-5-20251001`                          | anthropic | Claude Haiku 4.5                                   |
 | `claude-haiku-4-5`                                   | anthropic | Alias for Claude Haiku 4.5                         |
+| `gpt-6-astra`                                        | codex     | GPT-6 Astra                                        |
+| `gpt-5.6`                                            | codex     | Alias for GPT-5.6 Sol                              |
+| `gpt-5.6-sol`                                        | codex     | GPT-5.6 Sol                                        |
+| `gpt-5.6-terra`                                      | codex     | GPT-5.6 Terra                                      |
+| `gpt-5.6-luna`                                       | codex     | GPT-5.6 Luna                                       |
 | `gpt-5.5`                                            | codex     | GPT-5.5 (reasoning model)                          |
 | `gpt-5.4`                                            | codex     | GPT-5.4                                            |
 | `gpt-5.4-mini`                                       | codex     | GPT-5.4 Mini                                       |
@@ -178,7 +183,7 @@ Short convenience aliases accepted by auth2api:
 - `sonnet` -> `claude-sonnet-4-6`
 - `haiku` -> `claude-haiku-4-5-20251001`
 
-Routing: requests are dispatched to the matching pool by model name. `claude-*` and the bare aliases (`opus`/`sonnet`/`haiku`) hit your Claude account; `gpt-5*`, `o\d` (`o3`, `o4-mini`, …), and `codex-*` hit your Codex account; `cursor-*` and `cr/*` hit your Cursor account. Other model families (`gpt-3.5-*`, `gpt-4*`, …) are not served by either backend and route to anthropic by default. If you haven't logged into the matching provider, the request returns `503 no_account_for_provider` with the exact `--login` command to fix it.
+Routing: requests are dispatched to the matching pool by model name. `claude-*` and the bare aliases (`opus`/`sonnet`/`haiku`) hit your Claude account; `gpt-5*`, `gpt-6*`, `o\d` (`o3`, `o4-mini`, …), and `codex-*` hit your Codex account; `cursor-*` and `cr/*` hit your Cursor account. Other model families (`gpt-3.5-*`, `gpt-4*`, …) are not served by either backend and route to anthropic by default. If you haven't logged into the matching provider, the request returns `503 no_account_for_provider` with the exact `--login` command to fix it.
 
 #### "Cursor exclusive" mode (zero-config Claude Code / OpenAI clients)
 
@@ -188,10 +193,10 @@ When **only Cursor has a logged-in account** (anthropic and codex are both empty
 | ---------------------------------------------------------- | ---------------------------------------------------------------------------------- |
 | `POST /v1/messages` `{"model":"claude-sonnet-4-5"}`        | routes through Cursor and re-encodes the upstream stream as Anthropic Messages SSE |
 | `POST /v1/messages` `{"model":"opus"}`                     | maps `opus` → `claude-opus-4-7-medium` on Cursor, returns Anthropic Messages SSE   |
-| `POST /v1/responses` `{"model":"gpt-5.5"}`                 | maps to `gpt-5.5-medium` on Cursor, returns OpenAI Responses SSE                   |
+| `POST /v1/responses` `{"model":"gpt-5.6"}`                 | maps to `gpt-5.6-sol` on Cursor, returns OpenAI Responses SSE                      |
 | `POST /v1/chat/completions` `{"model":"claude-haiku-4-5"}` | maps to `claude-4.5-haiku` on Cursor                                               |
 
-A small built-in alias table covers the names Anthropic / OpenAI SDKs and Claude Code use by default (`claude-sonnet-4-5`, `claude-opus-4-7`, `opus`, `sonnet`, `haiku`, `gpt-5.5`, `o3`, …) and translates them to Cursor's internal SKUs (`claude-4.5-sonnet`, `claude-opus-4-7-medium`, `gpt-5.5-medium`, …). Set `CURSOR_MODEL_ALIASES="my-name=claude-opus-4-7-max,foo=composer-2"` to extend the table without forking. Anything not in the table is passed through verbatim, so you can still hit Cursor's full SKU catalogue (e.g. `claude-opus-4-7-thinking-max`).
+A small built-in alias table covers the names Anthropic / OpenAI SDKs and Claude Code use by default (`claude-sonnet-4-5`, `claude-opus-4-7`, `opus`, `sonnet`, `haiku`, `gpt-5.6`, `gpt-5.5`, `o3`, …) and translates them to Cursor's internal SKUs (`claude-4.5-sonnet`, `claude-opus-4-7-medium`, `gpt-5.6-sol`, `gpt-5.5-medium`, …). Set `CURSOR_MODEL_ALIASES="my-name=claude-opus-4-7-max,foo=composer-2"` to extend the table without forking. Anything not in the table is passed through verbatim, so you can still hit Cursor's full SKU catalogue (e.g. `claude-opus-4-7-thinking-max`).
 
 When **more than one provider has accounts**, the historical routing table above applies — explicit prefixes (`cursor-`, `cr/`) still force Cursor, but `claude-*` goes to your Anthropic OAuth account.
 
@@ -305,7 +310,7 @@ Response shape (one entry per logged-in provider):
 }
 ```
 
-Each account snapshot carries availability, cooldown, failure counters, last refresh time, request statistics, and per-account token usage including `totalReasoningOutputTokens` (reasoning models like `gpt-5.5` consume hidden reasoning tokens that aren't part of the visible output). Codex accounts also carry `planType` (e.g. `"plus"` / `"pro"` / `"free"`) extracted from the OAuth `id_token`. If a refresh token was permanently invalidated (`refresh_token_reused`/`expired`/`invalidated`), the account enters a 24-hour terminal cooldown with `lastError` set to a message pointing at `--login --provider=<provider>` for re-authorization.
+Each account snapshot carries availability, cooldown, failure counters, last refresh time, request statistics, and per-account token usage including `totalReasoningOutputTokens` (reasoning models like `gpt-5.6-sol` consume hidden reasoning tokens that aren't part of the visible output). Codex accounts also carry `planType` (e.g. `"plus"` / `"pro"` / `"free"`) extracted from the OAuth `id_token`. If a refresh token was permanently invalidated (`refresh_token_reused`/`expired`/`invalidated`), the account enters a 24-hour terminal cooldown with `lastError` set to a message pointing at `--login --provider=<provider>` for re-authorization.
 
 ### Re-authenticating without restart
 

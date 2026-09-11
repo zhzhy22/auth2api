@@ -325,10 +325,15 @@ const PUBLIC_MODEL_TO_CURSOR: Record<string, string> = {
   haiku: "claude-4.5-haiku",
   sonnet: "claude-4.6-sonnet-medium",
   opus: "claude-opus-4-7-medium",
-  // OpenAI — common GPT-5 family names
+  // OpenAI — common GPT family names
   "gpt-5": "gpt-5.5-medium",
   "gpt-5-mini": "gpt-5-mini",
+  "gpt-5.6": "gpt-5.6-sol",
+  "gpt-5.6-sol": "gpt-5.6-sol",
+  "gpt-5.6-terra": "gpt-5.6-terra",
+  "gpt-5.6-luna": "gpt-5.6-luna",
   "gpt-5.5": "gpt-5.5-medium",
+  "gpt-6-astra": "gpt-6-astra",
   "gpt-5-codex": "gpt-5.3-codex",
   "gpt-5.3-codex": "gpt-5.3-codex",
   o3: "gpt-5.5-medium",
@@ -340,7 +345,7 @@ const PUBLIC_MODEL_TO_CURSOR: Record<string, string> = {
  * Normalise an inbound model id for the Cursor upstream:
  *   1. strip the auth2api routing prefix (`cursor-`, `cursor:`, `cr/`)
  *   2. translate well-known public names (`claude-sonnet-4-5`, `opus`,
- *      `gpt-5.5`, `o3`, …) into Cursor's internal SKU
+ *      `gpt-5.6`, `gpt-5.5`, `o3`, …) into Cursor's internal SKU
  *   3. otherwise keep the trimmed name verbatim — it's already a Cursor SKU
  */
 function normaliseModel(model: string): string {

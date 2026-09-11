@@ -237,6 +237,8 @@ test("registry exclusive-cursor mode: bare model names route to cursor when only
     assert.equal(registry.forModel("opus").id, "cursor");
     // OpenAI-shaped names → cursor.
     assert.equal(registry.forModel("gpt-5.5").id, "cursor");
+    assert.equal(registry.forModel("gpt-5.6").id, "cursor");
+    assert.equal(registry.forModel("gpt-6-astra").id, "cursor");
     assert.equal(registry.forModel("o3").id, "cursor");
     // Truly unknown identifiers → cursor (we'll ask Cursor's Auto router).
     assert.equal(registry.forModel("totally-unknown-model").id, "cursor");
@@ -359,7 +361,12 @@ test("__resolveCursorModel maps public Anthropic/OpenAI names to Cursor SKUs", (
   assert.equal(__resolveCursorModel("opus"), "claude-opus-4-7-medium");
   assert.equal(__resolveCursorModel("sonnet"), "claude-4.6-sonnet-medium");
   assert.equal(__resolveCursorModel("haiku"), "claude-4.5-haiku");
+  assert.equal(__resolveCursorModel("gpt-5.6"), "gpt-5.6-sol");
+  assert.equal(__resolveCursorModel("gpt-5.6-sol"), "gpt-5.6-sol");
+  assert.equal(__resolveCursorModel("gpt-5.6-terra"), "gpt-5.6-terra");
+  assert.equal(__resolveCursorModel("gpt-5.6-luna"), "gpt-5.6-luna");
   assert.equal(__resolveCursorModel("gpt-5.5"), "gpt-5.5-medium");
+  assert.equal(__resolveCursorModel("gpt-6-astra"), "gpt-6-astra");
   assert.equal(__resolveCursorModel("o3"), "gpt-5.5-medium");
 });
 
@@ -369,6 +376,7 @@ test("__resolveCursorModel strips routing prefix and passes Cursor SKUs through"
     "composer-2-fast",
   );
   assert.equal(__resolveCursorModel("cr/gpt-5.5-medium"), "gpt-5.5-medium");
+  assert.equal(__resolveCursorModel("cr/gpt-5.6-sol"), "gpt-5.6-sol");
   assert.equal(__resolveCursorModel("cursor:default"), "default");
   assert.equal(__resolveCursorModel(""), "default");
 });

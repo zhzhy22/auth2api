@@ -14,6 +14,10 @@ import {
 import { TokenData, TokenStorage } from "../src/auth/types";
 import { AccountManager, extractUsage } from "../src/accounts/manager";
 import { buildRegistry } from "../src/providers/registry";
+import {
+  __resetCodexModelsCache,
+  listCodexModels,
+} from "../src/upstream/codex-models";
 import { generateCodexAuthURL } from "../src/auth/codex/oauth";
 import { generatePKCECodes } from "../src/auth/pkce";
 import {
@@ -82,9 +86,14 @@ test("providerForModel routes by model name", () => {
     assert.equal(registry.forModel("mythos").id, "anthropic");
     assert.equal(registry.forModel("opus").id, "anthropic");
     assert.equal(registry.forModel("claude-opus-4-7").id, "anthropic");
-    // Codex — gpt-5 family + o-series + codex- prefix
+    // Codex — current GPT family + o-series + codex- prefix
     assert.equal(registry.forModel("gpt-5").id, "codex");
     assert.equal(registry.forModel("gpt-5-codex").id, "codex");
+    assert.equal(registry.forModel("gpt-6-astra").id, "codex");
+    assert.equal(registry.forModel("gpt-5.6").id, "codex");
+    assert.equal(registry.forModel("gpt-5.6-sol").id, "codex");
+    assert.equal(registry.forModel("gpt-5.6-terra").id, "codex");
+    assert.equal(registry.forModel("gpt-5.6-luna").id, "codex");
     assert.equal(registry.forModel("gpt-5.5").id, "codex");
     assert.equal(registry.forModel("gpt-5.4").id, "codex");
     assert.equal(registry.forModel("gpt-5.4-mini").id, "codex");
@@ -96,11 +105,33 @@ test("providerForModel routes by model name", () => {
     // Legacy OpenAI models that codex backend does NOT serve — default to anthropic.
     assert.equal(registry.forModel("gpt-3.5-turbo").id, "anthropic");
     assert.equal(registry.forModel("gpt-4").id, "anthropic");
+    assert.equal(registry.forModel("gpt-4.6").id, "anthropic");
     assert.equal(registry.forModel("gpt-4o").id, "anthropic");
     assert.equal(registry.forModel("gpt-4o-mini").id, "anthropic");
     // Unknown model defaults to anthropic for backwards compatibility.
     assert.equal(registry.forModel("unknown-model").id, "anthropic");
   } finally {
+    fs.rmSync(tmpDir, { recursive: true, force: true });
+  }
+});
+
+test("listCodexModels fallback includes newer GPT Codex models", async () => {
+  const tmpDir = fs.mkdtempSync(path.join(os.tmpdir(), "auth2api-"));
+  try {
+    __resetCodexModelsCache();
+    const manager = new AccountManager(tmpDir, {
+      provider: "codex",
+      refresh: async () => ({}) as any,
+    });
+    const ids = (await listCodexModels(manager)).map((m) => m.id);
+    assert.ok(ids.includes("gpt-6-astra"));
+    assert.ok(ids.includes("gpt-5.6"));
+    assert.ok(ids.includes("gpt-5.6-sol"));
+    assert.ok(ids.includes("gpt-5.6-terra"));
+    assert.ok(ids.includes("gpt-5.6-luna"));
+    assert.ok(ids.indexOf("gpt-6-astra") < ids.indexOf("gpt-5.5"));
+  } finally {
+    __resetCodexModelsCache();
     fs.rmSync(tmpDir, { recursive: true, force: true });
   }
 });
