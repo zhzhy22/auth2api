@@ -6,10 +6,14 @@ const CACHE_TTL_MS = 5 * 60 * 1000; // matches codex-rs/models-manager DEFAULT_M
 const CLIENT_VERSION = "auth2api/1.0.0";
 
 // Static fallback used when no account is loaded or the upstream /codex/models
-// call fails. User-confirmed list of models currently accepted by the
-// ChatGPT-account codex backend; kept private since the upstream proxy is the
-// authoritative source — this list only papers over startup and outages.
+// call fails. The live upstream remains authoritative for account-specific
+// availability; this list only papers over startup and outages.
 const FALLBACK_MODELS = [
+  "gpt-6-astra",
+  "gpt-5.6",
+  "gpt-5.6-sol",
+  "gpt-5.6-terra",
+  "gpt-5.6-luna",
   "gpt-5.5",
   "gpt-5.4",
   "gpt-5.4-mini",

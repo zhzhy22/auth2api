@@ -51,9 +51,9 @@ cloaking:
   # `npm view @openai/codex version` shows the current released version.
   codex:
     # Full User-Agent string, takes precedence over the components below.
-    # user-agent: "codex_cli_rs/0.125.0 (macos; arm64)"
+    # user-agent: "codex_cli_rs/0.154.0 (macos; arm64)"
     originator: "codex_cli_rs"
-    cli-version: "0.125.0"
+    cli-version: "0.154.0"
     # Set only if the upstream begins requiring an OpenAI-Beta header.
     # openai-beta: "responses=experimental"
 
