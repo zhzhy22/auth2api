@@ -11,15 +11,45 @@ const RESPONSES_COMPACT_PATH = "/codex/responses/compact";
 const DEFAULT_ORIGINATOR = "codex_cli_rs";
 // Backend version-gates newer Codex models and rejects older versions with
 // "requires a newer version of Codex". Tracks the current @openai/codex CLI
-// release at the time of writing. Override via `cloaking.codex.cli-version` if
-// upstream's minimum changes again.
+// release at the time of writing. We clamp stale user config to this minimum
+// so older config.yaml files do not keep sending version-gated models through
+// an obsolete client version.
 const DEFAULT_CLI_VERSION = "0.154.0";
+
+function parseVersion(version: string): [number, number, number] | null {
+  const match = version.match(/^(\d+)\.(\d+)\.(\d+)/);
+  if (!match) return null;
+  return [Number(match[1]), Number(match[2]), Number(match[3])];
+}
+
+function compareVersions(a: string, b: string): number {
+  const av = parseVersion(a);
+  const bv = parseVersion(b);
+  if (!av || !bv) return 0;
+  for (let i = 0; i < 3; i++) {
+    if (av[i] !== bv[i]) return av[i] - bv[i];
+  }
+  return 0;
+}
+
+function codexCliVersion(config: Config): string {
+  const configured =
+    config.cloaking.codex?.["cli-version"] || DEFAULT_CLI_VERSION;
+  return compareVersions(configured, DEFAULT_CLI_VERSION) < 0
+    ? DEFAULT_CLI_VERSION
+    : configured;
+}
 
 function buildUserAgent(config: Config): string {
   const codex = config.cloaking.codex || {};
-  if (codex["user-agent"]) return codex["user-agent"];
+  const version = codexCliVersion(config);
+  if (codex["user-agent"]) {
+    return codex["user-agent"].replace(
+      /codex_cli_rs\/\d+\.\d+\.\d+(?:[-+][^\s)]+)?/,
+      `${codex.originator || DEFAULT_ORIGINATOR}/${version}`,
+    );
+  }
   const originator = codex.originator || DEFAULT_ORIGINATOR;
-  const version = codex["cli-version"] || DEFAULT_CLI_VERSION;
   const platform =
     process.platform === "darwin"
       ? "macos"
@@ -54,10 +84,8 @@ function buildHeaders(
     // Provider-level header sent by the official codex CLI on every request:
     // codex-rs/model-provider-info/src/lib.rs:324-328 sets
     //   http_headers = { "version": env!("CARGO_PKG_VERSION") }
-    // The current ChatGPT backend doesn't enforce it, but matching the
-    // official client makes us less brittle to future Cloudflare/upstream
-    // rules. Reuses cli-version so it stays in sync with the User-Agent.
-    version: codex["cli-version"] || DEFAULT_CLI_VERSION,
+    // Reuses the clamped cli-version so it stays in sync with the User-Agent.
+    version: codexCliVersion(config),
   };
   if (account.chatgptAccountId) {
     headers["ChatGPT-Account-ID"] = account.chatgptAccountId;

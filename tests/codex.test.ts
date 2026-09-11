@@ -807,17 +807,41 @@ function makeAvailableAccount(): AvailableAccount {
   };
 }
 
-test("codex headers include `version` (parity with official CLI provider header)", () => {
+test("codex headers include minimum supported `version`", () => {
   const headers = __buildCodexHeaders(
     makeAvailableAccount(),
     /*stream*/ true,
     makeCodexConfig({ "cli-version": "0.41.0" }),
   );
   // Required-by-codex-CLI provider header (model-provider-info/src/lib.rs:324).
-  // Value tracks our configured cli-version so it stays in sync with User-Agent.
-  assert.equal(headers.version, "0.41.0");
+  // Stale config is clamped so newer models do not trip upstream gates.
+  assert.equal(headers.version, "0.154.0");
+  assert.match(headers["User-Agent"], /codex_cli_rs\/0\.154\.0/);
   // Authoring sanity-check: the value must not equal the auth bearer.
   assert.notEqual(headers.version, headers.Authorization);
+});
+
+test("codex headers preserve newer configured cli versions", () => {
+  const headers = __buildCodexHeaders(
+    makeAvailableAccount(),
+    /*stream*/ true,
+    makeCodexConfig({ "cli-version": "0.155.0-alpha.3" }),
+  );
+  assert.equal(headers.version, "0.155.0-alpha.3");
+  assert.match(headers["User-Agent"], /codex_cli_rs\/0\.155\.0-alpha\.3/);
+});
+
+test("codex headers upgrade stale full User-Agent versions", () => {
+  const headers = __buildCodexHeaders(
+    makeAvailableAccount(),
+    /*stream*/ true,
+    makeCodexConfig({
+      "cli-version": "0.125.0",
+      "user-agent": "codex_cli_rs/0.125.0 (windows; x86_64)",
+    }),
+  );
+  assert.equal(headers.version, "0.154.0");
+  assert.equal(headers["User-Agent"], "codex_cli_rs/0.154.0 (windows; x86_64)");
 });
 
 test("codex headers include the always-protocol-required set", () => {
@@ -1099,7 +1123,10 @@ function makeNotifyConfig(): Config2 {
 }
 
 function withFetchStub(
-  stub: (input: string | URL | Request, init?: RequestInit) => Promise<Response>,
+  stub: (
+    input: string | URL | Request,
+    init?: RequestInit,
+  ) => Promise<Response>,
 ): () => void {
   const orig = globalThis.fetch;
   globalThis.fetch = stub as typeof fetch;
@@ -1133,10 +1160,10 @@ test("notifyServerReload posts to /admin/reload with the first api-key as Bearer
   let seen: { url: string; init?: RequestInit } | null = null;
   const restoreFetch = withFetchStub(async (input, init) => {
     seen = { url: String(input), init };
-    return new Response(
-      JSON.stringify({ reloaded: {}, generated_at: "now" }),
-      { status: 200, headers: { "Content-Type": "application/json" } },
-    );
+    return new Response(JSON.stringify({ reloaded: {}, generated_at: "now" }), {
+      status: 200,
+      headers: { "Content-Type": "application/json" },
+    });
   });
   const cap = captureLogs();
   try {
@@ -1152,7 +1179,9 @@ test("notifyServerReload posts to /admin/reload with the first api-key as Bearer
     (seen!.init?.headers as Record<string, string>)?.Authorization,
     "Bearer sk-test",
   );
-  assert.ok(cap.logs.some((l) => l.includes("Notified running auth2api server")));
+  assert.ok(
+    cap.logs.some((l) => l.includes("Notified running auth2api server")),
+  );
   assert.equal(cap.warns.length, 0);
 });
 
